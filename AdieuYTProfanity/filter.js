@@ -30,6 +30,7 @@ var wduration=0;
 var words=0;
 var bwords=0;
 /**************************************/
+var mutationObserver;
 
 if(inSite("www.youtube",true)){
 	(document.body || document.documentElement).addEventListener('transitionend',filterVideoProfanities,true);
@@ -1017,6 +1018,29 @@ function filter(listToMute){
 	var indexCurrent=1;
 	var remainingTime;
 
+	if (mutationObserver) {
+		mutationObserver.disconnect();
+		mutationObserver = undefined;
+	}
+	mutationObserver = new MutationObserver(function(mutations) {
+		mutations.forEach(function(mutation) {
+
+			// we only trigger filtering if captions are added and not removed
+			if (mutation.removedNodes.length === 0) {
+				filterCaption();
+			}
+		});
+	});
+
+	mutationObserver.observe(document.getElementById('movie_player'), {
+		attributes: false,
+		characterData: false,
+		childList: true,
+		subtree: false,
+		attributeOldValue: false,
+		characterDataOldValue: false
+	});
+
 	if (rateCounter[0] > 0){
 		filterLoop = setInterval(function() {
 			if(ended){
@@ -1147,6 +1171,38 @@ function muteInstance(){
 			videoControl.muted=false; //(must check signature or estate?)
 		}else{
 			setTimeout(muteInstance,cycleTime/5);
+		}
+	}
+}
+
+function showCaption() {
+	//var captionElm = document.querySelector('.caption-window .captions-text span');
+	document.getElementById('profanity-css').outerHTML = "";
+}
+
+function hideCaption() {
+	//var captionElm = document.querySelector('.caption-window .captions-text span');
+	var style = document.createElement('style');
+	style.id = 'profanity-css';
+	style.type = 'text/css';
+	style.innerHTML = '.caption-window .captions-text span { visibility: hidden; }';
+	document.getElementsByTagName('head')[0].appendChild(style);
+}
+
+function filterCaption() {
+	var captionElm = document.querySelector('.caption-window .captions-text span');
+
+	if (captionElm) {
+		var replaceMask = "*****";
+
+		for(var z=0;z<profanityList.length;z++){
+			re=new RegExp(profanityList[z],'i');
+			var re2=new RegExp(profanityList[z],'gi');
+
+			if(re.test(" "+captionElm.innerText+" ")){
+				const sanitized = captionElm.innerText.replace(re2, replaceMask);
+				captionElm.innerText = sanitized;
+			}
 		}
 	}
 }
