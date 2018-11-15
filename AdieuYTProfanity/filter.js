@@ -1160,7 +1160,9 @@ function inSite(charSite,update){
 }
 
 function getYTLocation(){
-	return document.getElementsByClassName('ytp-title-link')[0].href;
+	const YTlink = document.getElementsByClassName('ytp-title-link')[0];
+
+	return YTlink.href || YTlink.baseURI;
 }
 
 function muteInstance(){
